@@ -40,7 +40,7 @@ spec:
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
-                fieldPath: metadata.namespace        
+                fieldPath: metadata.namespace
           - name: POD_NAME
             valueFrom:
               fieldRef:
