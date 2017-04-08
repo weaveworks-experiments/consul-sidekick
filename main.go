@@ -83,7 +83,7 @@ func (c consulSideKick) consolidatePeers() error {
 		if _, peerExists := consulPodIPs[peerIP]; !peerExists {
 			log.Printf("Deleting peer %s", peer)
 			if err := c.consulClient.Operator().RaftRemovePeerByAddress(peer, nil); err != nil {
-				log.Printf("Cannot force peer %q to leave: %v", peer, err)
+				log.Printf("Cannot remove peer %q: %v", peer, err)
 			}
 		}
 		// The remaining ips are the ones which should be added
