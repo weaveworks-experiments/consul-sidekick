@@ -16,7 +16,7 @@ Advantages:
 
 ## Install
 
-See an [example](/examples) on how to use it.
+See an [example](/examples) of how to use it.
 
 ## Limitations
 
