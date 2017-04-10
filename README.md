@@ -1,6 +1,6 @@
 # consul-sidekick
 
-Automatic peer management for Consul in [Consul](https://www.consul.io/) in
+Automatic peer management for [Consul](https://www.consul.io/) in
 [Kubernetes](https://kubernetes.io/).
 
 consul-sidekick is designed to run as a sidecar container to each Consul pod. It
