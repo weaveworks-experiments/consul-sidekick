@@ -10,6 +10,7 @@ syncs the Consul pod accordingly.
 Advantages:
 * Uniform deployment. All instances of Consul are deployed identically. No need
   to worry about the `-bootstrap` flag.
+* Consul instances are treated as [_cattle_](http://cloudscaling.com/blog/cloud-computing/the-history-of-pets-vs-cattle/), avoiding the [limitations of StatefulSets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/#limitations).  
 * No more stale peers when pods are replaced or deleted.
 * No more bootstrapping issues. No need for an external bootstrapping service
   like [Atlas](https://www.consul.io/docs/guides/atlas.html) (now deprecated).
