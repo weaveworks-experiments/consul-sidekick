@@ -1,5 +1,5 @@
 IMAGE=weaveworks/consul-sidekick
-QUAY_IMAGE=quay.io/$(IMAGE):$(shell git rev-parse --abbrev-ref HEAD)-$(shell git rev-parse --short HEAD)
+TAGGED_IMAGE=$(IMAGE):$(shell git rev-parse --abbrev-ref HEAD)-$(shell git rev-parse --short HEAD)
 
 .PHONY: all push
 
@@ -11,5 +11,5 @@ consul-sidekick: main.go
 
 push: all
 	docker push $(IMAGE)
-	docker tag $(IMAGE) $(QUAY_IMAGE)
-	docker push $(QUAY_IMAGE)
+	docker tag $(IMAGE) $(TAGGED_IMAGE)
+	docker push $(TAGGED_IMAGE)
