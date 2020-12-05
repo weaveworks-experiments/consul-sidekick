@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -20,10 +21,11 @@ type consulSideKick struct {
 	podName      string
 	consulClient *consul.Client
 	k8sClient    *kubernetes.Clientset
+	context      context.Context
 }
 
 func (c consulSideKick) getPodInfo() (ip string, ownerSelector labels.Selector, err error) {
-	pod, err := c.k8sClient.CoreV1().Pods(c.namespace).Get(c.podName, v1.GetOptions{})
+	pod, err := c.k8sClient.CoreV1().Pods(c.namespace).Get(c.context, c.podName, v1.GetOptions{})
 	if err != nil {
 		return "", nil, fmt.Errorf("cannot find consul pod (%s/%s): %v", c.namespace, c.podName, err)
 	}
@@ -35,9 +37,9 @@ func (c consulSideKick) getPodInfo() (ip string, ownerSelector labels.Selector, 
 		return "", nil, fmt.Errorf("consul pod (%s/%s) is not owned by a ReplicaSet", c.namespace, c.podName)
 	}
 	replicaSetName := ownerReference.Name
-	replicaSet, err := c.k8sClient.ReplicaSets(c.namespace).Get(replicaSetName, v1.GetOptions{})
+	replicaSet, err := c.k8sClient.AppsV1().ReplicaSets(c.namespace).Get(c.context, replicaSetName, v1.GetOptions{})
 	if err != nil {
-		return "", nil, fmt.Errorf("Cannot access ReplicaSet (%s/%s)", c.namespace, replicaSetName)
+		return "", nil, fmt.Errorf("Cannot access ReplicaSet (%s/%s) : %s", c.namespace, replicaSetName, err)
 	}
 	podSelector := replicaSet.Spec.Selector
 	selector, err := v1.LabelSelectorAsSelector(podSelector)
@@ -50,7 +52,7 @@ func (c consulSideKick) getPodInfo() (ip string, ownerSelector labels.Selector, 
 func (c consulSideKick) getPodIPs(selector labels.Selector) (map[string]struct{}, error) {
 	podIPs := map[string]struct{}{}
 	listOptions := v1.ListOptions{LabelSelector: selector.String()}
-	podList, err := c.k8sClient.Pods(c.namespace).List(listOptions)
+	podList, err := c.k8sClient.CoreV1().Pods(c.namespace).List(c.context, listOptions)
 	if err != nil {
 		return nil, fmt.Errorf("cannot obtain peer pods (selector: %s): %v", selector, err)
 	}
@@ -90,7 +92,7 @@ func (c consulSideKick) consolidatePeers() error {
 		delete(consulPodIPs, peerIP)
 	}
 
-	for peerToAdd, _ := range consulPodIPs {
+	for peerToAdd := range consulPodIPs {
 		// Don't ask pod to join itself
 		if peerToAdd == podIP {
 			continue
@@ -105,7 +107,7 @@ func (c consulSideKick) consolidatePeers() error {
 }
 
 func main() {
-	consulApiHost := flag.String("consul-api-host", "localhost:8500", "Consul HTTP API host and port")
+	consulAPIHost := flag.String("consul-api-host", "localhost:8500", "Consul HTTP API host and port")
 	podName := flag.String("pod-name", "", "Pod name where consul is running")
 	namespace := flag.String("namespace", "default", "Namespace where consul is running")
 	pollPeriod := flag.Duration("poll-period", time.Second*5, "Polling period")
@@ -113,7 +115,7 @@ func main() {
 	flag.Parse()
 
 	consulConfig := consul.DefaultConfig()
-	consulConfig.Address = *consulApiHost
+	consulConfig.Address = *consulAPIHost
 	consulClient, err := consul.NewClient(consulConfig)
 	if err != nil {
 		log.Fatal(err)
@@ -143,6 +145,7 @@ func main() {
 		podName:      *podName,
 		consulClient: consulClient,
 		k8sClient:    k8sClient,
+		context:      context.Background(),
 	}
 
 	for ; ; time.Sleep(*pollPeriod) {
